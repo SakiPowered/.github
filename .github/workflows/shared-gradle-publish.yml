@@ -1,0 +1,80 @@
+# Thanks to Kyori for the inspiration for this workflow
+
+name: Build and Publish
+
+on:
+  workflow_call:
+    inputs:
+      runtime_version:
+        description: 'The default Java runtime version to run builds on'
+        required: false
+        type: number
+        default: 17
+      extra_gradle_params:
+        description: 'Extra arguments to pass to all Gradle invocations'
+        required: false
+        type: string
+        default: ''
+      extra_gradle_publish_params:
+        description: 'Extra arguments to pass to the Gradle invocation that publishes this project'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      SAKI_REPO_USER:
+        description: 'SakiPowered repository username'
+        required: false
+      SAKI_REPO_TOKEN:
+        description: 'SakiPowered repository password'
+        required: false
+      SAKI_GPG_KEY:
+        description: 'SakiPowered GPG signing key'
+        required: false
+      SAKI_GPG_KEY_ID:
+        description: 'SakiPowered GPG signing key id'
+        required: false
+      SAKI_GPG_PASSWORD:
+        description: 'SakiPowered GPG signing password'
+        required: false
+
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  actions: "write"
+  contents: "read"
+
+jobs:
+  build:
+    # Only run on PRs if the source branch is on someone else's repo
+    if: "${{ github.event_name != 'pull_request' || github.repository != github.event.pull_request.head.repo.full_name }}"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "checkout repository"
+        uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: "setup jdk ${{ inputs.runtime_version }}"
+        uses: "actions/setup-java@v4"
+        with:
+          distribution: "zulu"
+          java-version: "${{ inputs.runtime_version }}"
+          cache: "gradle"
+      - name: "validate gradle wrapper"
+        uses: "gradle/wrapper-validation-action@v1"
+      - name: "run gradle build"
+        uses: "gradle/gradle-build-action@v2"
+        with:
+          cache-read-only: "${{ steps.branch-name.outputs.match == '' || github.event_name == 'pull_request' }}"
+          arguments: " ${{ inputs.extra_gradle_params }} build"
+      - name: "publish"
+        run: "./gradlew ${{ inputs.extra_gradle_params }} publish ${{ inputs.extra_gradle_publish_params }}"
+        env:
+          ORG_GRADLE_PROJECT_sakiUsername: "${{ secrets.SAKI_REPO_USER }}"
+          ORG_GRADLE_PROJECT_sakiPassword: "${{ secrets.SAKI_REPO_TOKEN }}"
+          ORG_GRADLE_PROJECT_signingKey: "${{ secrets.SAKI_GPG_KEY }}"
+          ORG_GRADLE_PROJECT_signingKeyId: "${{ secrets.SAKI_GPG_KEY_ID }}"
+          ORG_GRADLE_PROJECT_signingPassword: "${{ secrets.SAKI_GPG_PASSWORD }}"
