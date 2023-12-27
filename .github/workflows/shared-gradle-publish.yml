@@ -52,25 +52,26 @@ jobs:
     if: "${{ github.event_name != 'pull_request' || github.repository != github.event.pull_request.head.repo.full_name }}"
     runs-on: "ubuntu-latest"
     steps:
-      - name: "checkout repository"
+      - name: "Checkout Repository"
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 0
           submodules: true
-      - name: "setup jdk ${{ inputs.runtime_version }}"
+      - name: "Setup JDK ${{ inputs.runtime_version }}"
         uses: "actions/setup-java@v4"
         with:
           distribution: "zulu"
           java-version: "${{ inputs.runtime_version }}"
           cache: "gradle"
-      - name: "validate gradle wrapper"
+      - name: "Validate Gradle Wrapper"
         uses: "gradle/wrapper-validation-action@v1"
-      - name: "run gradle build"
+        run: "chmod +x ./gradlew" # make sure the wrapper is executable
+      - name: "Run Gradle Build"
         uses: "gradle/gradle-build-action@v2"
         with:
           cache-read-only: "${{ steps.branch-name.outputs.match == '' || github.event_name == 'pull_request' }}"
           arguments: " ${{ inputs.extra_gradle_params }} build"
-      - name: "publish"
+      - name: "Publish"
         run: "./gradlew ${{ inputs.extra_gradle_params }} publish ${{ inputs.extra_gradle_publish_params }}"
         env:
           ORG_GRADLE_PROJECT_sakiUsername: "${{ secrets.SAKI_REPO_USER }}"
