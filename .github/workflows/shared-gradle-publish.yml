@@ -65,7 +65,8 @@ jobs:
           cache: "gradle"
       - name: "Validate Gradle Wrapper"
         uses: "gradle/wrapper-validation-action@v1"
-        run: "chmod +x ./gradlew" # make sure the wrapper is executable
+      - name: "Make Gradle Wrapper Executable"
+        run: "chmod +x ./gradlew"
       - name: "Run Gradle Build"
         uses: "gradle/gradle-build-action@v2"
         with:
