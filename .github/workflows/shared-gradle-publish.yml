@@ -5,17 +5,17 @@ name: Build and Publish
 on:
   workflow_call:
     inputs:
-      runtime_version:
+      runtimeVersion:
         description: 'The default Java runtime version to run builds on'
         required: false
         type: number
         default: 17
-      extra_gradle_params:
+      extraGradleParams:
         description: 'Extra arguments to pass to all Gradle invocations'
         required: false
         type: string
         default: ''
-      extra_gradle_publish_params:
+      extraGradlePublishParams:
         description: 'Extra arguments to pass to the Gradle invocation that publishes this project'
         required: false
         type: string
@@ -57,11 +57,11 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-      - name: "Setup JDK ${{ inputs.runtime_version }}"
+      - name: "Setup JDK ${{ inputs.runtimeVersion }}"
         uses: "actions/setup-java@v4"
         with:
           distribution: "zulu"
-          java-version: "${{ inputs.runtime_version }}"
+          java-version: "${{ inputs.runtimeVersion }}"
           cache: "gradle"
       - name: "Validate Gradle Wrapper"
         uses: "gradle/wrapper-validation-action@v1"
@@ -71,9 +71,9 @@ jobs:
         uses: "gradle/gradle-build-action@v2"
         with:
           cache-read-only: "${{ steps.branch-name.outputs.match == '' || github.event_name == 'pull_request' }}"
-          arguments: " ${{ inputs.extra_gradle_params }} build"
+          arguments: " ${{ inputs.extraGradleParams }} build"
       - name: "Publish"
-        run: "./gradlew ${{ inputs.extra_gradle_params }} publish ${{ inputs.extra_gradle_publish_params }}"
+        run: "./gradlew ${{ inputs.extraGradleParams }} publish ${{ inputs.extraGradlePublishParams }}"
         env:
           ORG_GRADLE_PROJECT_sakiUsername: "${{ secrets.SAKI_REPO_USER }}"
           ORG_GRADLE_PROJECT_sakiPassword: "${{ secrets.SAKI_REPO_TOKEN }}"
